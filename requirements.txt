@@ -17,6 +17,7 @@ python-multipart>=0.0.6
 
 # Streamlit for demo UI
 streamlit>=1.31.0
+streamlit-shadcn-ui>=0.1.28
 
 # PDF Processing
 PyMuPDF>=1.23.0
