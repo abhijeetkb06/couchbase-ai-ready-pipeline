@@ -1,0 +1,40 @@
+# Couchbase AI-Ready Data Pipeline Demo
+# Python Dependencies
+
+# HTTP Requests
+requests>=2.31.0
+
+# Couchbase SDK
+couchbase>=4.2.0
+
+# OpenAI for embeddings and LLM
+openai>=1.12.0
+
+# FastAPI for backend API
+fastapi>=0.109.0
+uvicorn>=0.27.0
+python-multipart>=0.0.6
+
+# Streamlit for demo UI
+streamlit>=1.31.0
+
+# PDF Processing
+PyMuPDF>=1.23.0
+pypdf>=4.0.0
+
+# Document Processing
+langchain>=0.1.0
+langchain-openai>=0.0.5
+
+# Data Processing
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# XML Parsing (for PubMed)
+lxml>=5.1.0
+
+# Type hints
+pydantic>=2.5.0
