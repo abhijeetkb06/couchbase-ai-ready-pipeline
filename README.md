@@ -318,7 +318,6 @@ This demo includes the [Healthcare Dataset](https://www.kaggle.com/datasets/pras
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Step-by-step setup instructions
 - **[DEMO_SCRIPT.md](DEMO_SCRIPT.md)** - Condensed 6-8 minute demo script
-- **[COMPLETE_DEMO_WALKTHROUGH.md](COMPLETE_DEMO_WALKTHROUGH.md)** - Full 20-25 minute presentation guide
 - **[VECTOR_EMBEDDING_SETUP.md](VECTOR_EMBEDDING_SETUP.md)** - Vector embedding pipeline deployment guide
 
 ## License
