@@ -101,7 +101,7 @@ def load_healthcare_data(bucket):
     global loaded_count, error_count
     
     if not CSV_FILE.exists():
-        print(f"❌ CSV file not found: {CSV_FILE}")
+        print(f" CSV file not found: {CSV_FILE}")
         print("\nPlease run first:")
         print("  python scripts/download_kaggle_data.py")
         return 0
@@ -207,7 +207,7 @@ def main():
     print("="*70)
     
     if not COUCHBASE_AVAILABLE:
-        print("\n❌ Couchbase SDK not installed")
+        print("\n Couchbase SDK not installed")
         print("Run: pip install couchbase")
         return
     
@@ -215,7 +215,7 @@ def main():
     cluster, bucket = connect_to_couchbase()
     
     if bucket is None:
-        print("\n❌ Could not connect to Couchbase")
+        print("\n Could not connect to Couchbase")
         print("Check your .env file credentials")
         return
     
