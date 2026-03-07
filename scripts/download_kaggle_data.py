@@ -42,7 +42,7 @@ def check_kaggle_setup():
         result = subprocess.run(["kaggle", "--version"], capture_output=True, text=True)
         print(f"✓ Kaggle CLI installed: {result.stdout.strip()}")
     except FileNotFoundError:
-        print("❌ Kaggle CLI not found")
+        print(" Kaggle CLI not found")
         print("\nPlease install it:")
         print("  pip install kaggle")
         sys.exit(1)
@@ -50,7 +50,7 @@ def check_kaggle_setup():
     # Check if KAGGLE_API_TOKEN is set
     kaggle_token = os.getenv("KAGGLE_API_TOKEN")
     if not kaggle_token:
-        print("❌ KAGGLE_API_TOKEN not found in .env file")
+        print(" KAGGLE_API_TOKEN not found in .env file")
         print("\nPlease add it to your .env file:")
         print("1. Go to https://www.kaggle.com/settings/account")
         print("2. Scroll to 'API' section")
@@ -91,7 +91,7 @@ def download_dataset():
             print(f"  - {file.name} ({size_mb:.2f} MB)")
         
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error downloading dataset: {e}")
+        print(f" Error downloading dataset: {e}")
         sys.exit(1)
 
 
