@@ -140,15 +140,15 @@ def print_next_steps():
     print("\n" + "="*70)
     print("✓ Simplified Couchbase setup complete!")
     print("="*70)
-    print("\n📁 Structure:")
+    print("\n Structure:")
     print(f"   Bucket: {BUCKET_NAME}")
     print(f"   └── _default (scope)")
     print(f"       ├── raw_documents (incoming data with PII)")
     print(f"       ├── processed_documents (clean, enriched data)")
     print(f"       └── metadata (eventing storage/checkpoints)")
-    print("\n🔄 Data Flow:")
+    print("\n Data Flow:")
     print("   raw_documents → [Eventing] → processed_documents")
-    print("\n📋 Next steps:")
+    print("\n Next steps:")
     print("1. Download Kaggle healthcare dataset:")
     print("   python scripts/download_kaggle_data.py")
     print("\n2. Load data into Couchbase:")
@@ -182,7 +182,7 @@ def main():
         print_next_steps()
         
     except Exception as e:
-        print(f"\n❌ Error during setup: {e}")
+        print(f"\n Error during setup: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
