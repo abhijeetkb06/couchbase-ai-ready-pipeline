@@ -77,7 +77,6 @@
 
 **Show the function dashboard:**
 - Processed: ~55,000 documents
-- Rate: ~50-100 docs/sec
 - Status: Running
 
 > "This is processing all 55,000 records right now. Takes about 10-15 minutes."
