@@ -307,7 +307,7 @@ couchbase-ai-ready-pipeline/
 │   ├── vector_embedding_pipeline.js       # Stage 2: HuggingFace BGE embeddings (768-dim)
 │   └── vector_embedding_openai_pipeline.js # Stage 2 alt: OpenAI embeddings (1536-dim)
 └── data/
-    └── raw/                       # Included healthcare dataset (~5MB)
+    └── raw/                       # Included healthcare dataset (5MB)
 ```
 
 ## Dataset
