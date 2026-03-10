@@ -1,46 +1,21 @@
 /**
  * Eventing Function: ComputeDashboardStats
  *
- * Purpose: Keeps dashboard statistics in sync with processed_documents.
- *          Uses a 5-second debounce timer so bulk mutations trigger only
- *          one recompute instead of thousands.
+ * Recomputes dashboard stats via N1QL aggregates on every mutation.
+ * No timers - just accurate recompute each time.
  *
- * How it works:
- *   1. OnUpdate/OnDelete fires on every processed_documents mutation
- *   2. A timer with a FIXED reference is created (5 seconds from now)
- *      - Same reference = previous pending timer is overwritten = debounce
- *   3. When the timer fires, N1QL aggregate queries compute fresh stats
- *   4. Result is written to stats collection as "dashboard_stats" document
- *
- * Configuration:
- *   Source Bucket:     pharma_knowledge
- *   Source Scope:      _default
- *   Source Collection: processed_documents
- *   Metadata Bucket:   pharma_knowledge
- *   Metadata Scope:    storage
- *   Metadata Collection: metadata
- *
- * Bucket Bindings:
- *   stats_col (read-write) -> pharma_knowledge._default.stats
+ * Source: pharma_knowledge._default.processed_documents
+ * Metadata: pharma_knowledge.storage.metadata
+ * Bucket Binding: stats_col (read-write) -> pharma_knowledge._default.stats
  */
 
 function OnUpdate(doc, meta) {
     if (doc.type !== "processed_patient_record") {
         return;
     }
-    var fireAt = new Date();
-    fireAt.setSeconds(fireAt.getSeconds() + 5);
-    createTimer(doRecompute, fireAt, "dashboard_stats_recompute", {});
-}
 
-function OnDelete(meta, options) {
-    var fireAt = new Date();
-    fireAt.setSeconds(fireAt.getSeconds() + 5);
-    createTimer(doRecompute, fireAt, "dashboard_stats_recompute", {});
-}
-
-function doRecompute(context) {
-    log("Recomputing dashboard stats...");
+    var doctype = "processed_patient_record";
+    var none_val = "None";
 
     var stats = {
         type: "dashboard_stats",
@@ -55,86 +30,99 @@ function doRecompute(context) {
         last_updated: new Date().toISOString()
     };
 
-    // Totals
-    var r1 = N1QL(
-        "SELECT COUNT(*) AS total, " +
-        "COUNT(CASE WHEN vector IS NOT MISSING THEN 1 END) AS with_embeddings, " +
-        "COUNT(DISTINCT medical.`condition`) AS unique_conditions, " +
-        "COUNT(DISTINCT medical.medication) AS unique_medications " +
-        "FROM `pharma_knowledge`.`_default`.`processed_documents` " +
-        "WHERE type = \"processed_patient_record\"",
-        [],
-        { 'consistency': 'request' }
-    );
-    for (var row of r1) {
-        stats.total_patients = row.total;
-        stats.with_embeddings = row.with_embeddings;
-        stats.unique_conditions = row.unique_conditions;
-        stats.unique_medications = row.unique_medications;
+    // Total patients
+    var r1 =
+        SELECT COUNT(*) AS total
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype;
+    for (var item of r1) {
+        stats.total_patients = item.total;
     }
     r1.close();
 
-    // By age group
-    var r2 = N1QL(
-        "SELECT metrics.age_group AS cat, COUNT(*) AS cnt " +
-        "FROM `pharma_knowledge`.`_default`.`processed_documents` " +
-        "WHERE type = \"processed_patient_record\" AND metrics.age_group IS NOT MISSING " +
-        "GROUP BY metrics.age_group",
-        [],
-        { 'consistency': 'request' }
-    );
-    for (var row of r2) {
-        stats.by_age_group[row.cat] = row.cnt;
+    // With embeddings
+    var r2 =
+        SELECT COUNT(*) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype AND vector IS NOT MISSING;
+    for (var item of r2) {
+        stats.with_embeddings = item.cnt;
     }
     r2.close();
 
-    // By billing category
-    var r3 = N1QL(
-        "SELECT metrics.billing_category AS cat, COUNT(*) AS cnt " +
-        "FROM `pharma_knowledge`.`_default`.`processed_documents` " +
-        "WHERE type = \"processed_patient_record\" AND metrics.billing_category IS NOT MISSING " +
-        "GROUP BY metrics.billing_category",
-        [],
-        { 'consistency': 'request' }
-    );
-    for (var row of r3) {
-        stats.by_billing[row.cat] = row.cnt;
+    // Unique conditions
+    var r3 =
+        SELECT COUNT(DISTINCT medical.condition) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype;
+    for (var item of r3) {
+        stats.unique_conditions = item.cnt;
     }
     r3.close();
 
-    // By medical condition
-    var r4 = N1QL(
-        "SELECT medical.`condition` AS cat, COUNT(*) AS cnt " +
-        "FROM `pharma_knowledge`.`_default`.`processed_documents` " +
-        "WHERE type = \"processed_patient_record\" AND medical.`condition` IS NOT MISSING " +
-        "GROUP BY medical.`condition`",
-        [],
-        { 'consistency': 'request' }
-    );
-    for (var row of r4) {
-        stats.by_condition[row.cat] = row.cnt;
+    // Unique medications
+    var r4 =
+        SELECT COUNT(DISTINCT medical.medication) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype
+        AND medical.medication IS NOT MISSING
+        AND medical.medication != $none_val;
+    for (var item of r4) {
+        stats.unique_medications = item.cnt;
     }
     r4.close();
 
-    // By medication
-    var r5 = N1QL(
-        "SELECT medical.medication AS cat, COUNT(*) AS cnt " +
-        "FROM `pharma_knowledge`.`_default`.`processed_documents` " +
-        "WHERE type = \"processed_patient_record\" " +
-        "AND medical.medication IS NOT MISSING " +
-        "AND medical.medication != \"None\" " +
-        "GROUP BY medical.medication",
-        [],
-        { 'consistency': 'request' }
-    );
-    for (var row of r5) {
-        stats.by_medication[row.cat] = row.cnt;
+    // By age group
+    var r5 =
+        SELECT metrics.age_group AS cat, COUNT(*) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype AND metrics.age_group IS NOT MISSING
+        GROUP BY metrics.age_group;
+    for (var item of r5) {
+        stats.by_age_group[item.cat] = item.cnt;
     }
     r5.close();
 
-    // Write to stats collection
-    stats_col["dashboard_stats"] = stats;
+    // By billing category
+    var r6 =
+        SELECT metrics.billing_category AS cat, COUNT(*) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype AND metrics.billing_category IS NOT MISSING
+        GROUP BY metrics.billing_category;
+    for (var item of r6) {
+        stats.by_billing[item.cat] = item.cnt;
+    }
+    r6.close();
 
+    // By medical condition
+    var r7 =
+        SELECT medical.condition AS cat, COUNT(*) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype AND medical.condition IS NOT MISSING
+        GROUP BY medical.condition;
+    for (var item of r7) {
+        stats.by_condition[item.cat] = item.cnt;
+    }
+    r7.close();
+
+    // By medication
+    var r8 =
+        SELECT medical.medication AS cat, COUNT(*) AS cnt
+        FROM `pharma_knowledge`.`_default`.`processed_documents`
+        WHERE type = $doctype
+        AND medical.medication IS NOT MISSING
+        AND medical.medication != $none_val
+        GROUP BY medical.medication;
+    for (var item of r8) {
+        stats.by_medication[item.cat] = item.cnt;
+    }
+    r8.close();
+
+    stats_col["dashboard_stats"] = stats;
     log("Dashboard stats updated: " + stats.total_patients + " patients, " +
         stats.with_embeddings + " with embeddings");
+}
+
+function OnDelete(meta, options) {
+    log("Document deleted: " + meta.id);
 }
